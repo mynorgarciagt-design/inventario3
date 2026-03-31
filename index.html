@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -17,7 +17,6 @@
         window.database = {};
         window.userId = null;
         
-        // Guardado Híbrido: Local (para Vercel) y Nube (para Canvas)
         window.saveToCloud = async (newItems) => {
             try {
                 localStorage.setItem('multimodas_inventory', JSON.stringify(newItems));
@@ -25,7 +24,6 @@
         };
 
         try {
-            // Cargar de memoria local primero para que sea instantáneo en Vercel
             const localData = localStorage.getItem('multimodas_inventory');
             if (localData) {
                 window.database = JSON.parse(localData);
@@ -80,7 +78,7 @@
         #reader { 
             border: none !important; 
             width: 100% !important; 
-            min-height: 380px; 
+            height: 260px; /* Reducido para dejar espacio al precio */
             background: #000; 
             border-radius: 2.5rem; 
             overflow: hidden;
@@ -117,8 +115,8 @@
             pointer-events: none;
         }
         @keyframes moveLine {
-            0%, 100% { transform: translateY(-70px); opacity: 0.5; }
-            50% { transform: translateY(70px); opacity: 1; }
+            0%, 100% { transform: translateY(-50px); opacity: 0.5; }
+            50% { transform: translateY(50px); opacity: 1; }
         }
 
         .focus-box {
@@ -126,8 +124,8 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 85%;
-            height: 140px;
+            width: 80%;
+            height: 100px;
             border: 2px solid rgba(255, 255, 255, 0.2);
             border-radius: 1.5rem;
             z-index: 5;
@@ -146,7 +144,7 @@
         }
     </style>
 </head>
-<body class="bg-gray-50 min-h-screen">
+<body class="bg-gray-50 min-h-screen flex flex-col">
 
     <div id="loading-screen" class="fixed inset-0 bg-white z-[100] flex items-center justify-center transition-opacity duration-300">
         <div class="text-center">
@@ -155,7 +153,7 @@
         </div>
     </div>
 
-    <header class="bg-white border-b sticky top-0 z-50 px-6 py-4 flex justify-between items-center shadow-sm">
+    <header class="bg-white border-b sticky top-0 z-50 px-6 py-4 flex justify-between items-center shadow-sm flex-none">
         <div>
             <h1 class="text-xl font-black text-gray-900 tracking-tight">Multi<span class="text-blue-600">modas</span></h1>
             <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest text-left">by Mynor Garcia</p>
@@ -165,16 +163,16 @@
         </div>
     </header>
 
-    <main class="p-4 max-w-lg mx-auto">
+    <main class="p-4 max-w-lg mx-auto w-full flex-1 flex flex-col">
         
-        <div class="flex bg-gray-200 p-1.5 rounded-2xl mb-6 shadow-inner">
+        <div class="flex bg-gray-200 p-1.5 rounded-2xl mb-6 shadow-inner flex-none">
             <button onclick="switchTab('scan')" id="tab-scan" class="flex-1 py-2.5 text-sm font-bold tab-active">Escanear</button>
             <button onclick="switchTab('data')" id="tab-data" class="flex-1 py-2.5 text-sm font-bold text-gray-500">Inventario</button>
         </div>
 
-        <section id="section-scan" class="space-y-4">
+        <section id="section-scan" class="space-y-4 flex-1 flex flex-col">
             
-            <div class="bg-white p-4 rounded-2xl border border-gray-100 flex items-center justify-between shadow-sm">
+            <div class="bg-white p-4 rounded-2xl border border-gray-100 flex items-center justify-between shadow-sm flex-none">
                 <div class="flex items-center gap-3">
                     <div class="p-2 bg-blue-50 rounded-lg text-blue-600">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
@@ -189,20 +187,20 @@
                 </label>
             </div>
 
-            <div class="bg-white p-4 rounded-[3rem] shadow-sm border border-gray-100 relative overflow-hidden">
+            <div class="bg-white p-4 rounded-[3rem] shadow-sm border border-gray-100 relative overflow-hidden flex-none">
                 <div id="camera-ui-container">
                     <div id="reader" class="w-full">
                         <div class="focus-box"></div>
                         <div class="scan-line" id="scan-line"></div>
                     </div>
-                    <button id="torch-button" onclick="toggleTorch()" class="hidden absolute top-8 right-8 z-20 bg-white/10 backdrop-blur-xl p-4 rounded-full text-white active:scale-90 transition-transform border border-white/20">
+                    <button id="torch-button" onclick="toggleTorch()" class="hidden absolute top-8 right-8 z-20 bg-white/10 backdrop-blur-xl p-3 rounded-full text-white active:scale-90 transition-transform border border-white/20">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
                     </button>
                 </div>
 
-                <div id="manual-trigger-container" class="hidden flex flex-col items-center py-16 gap-6 text-center">
-                    <div class="w-24 h-24 bg-blue-50 rounded-full flex items-center justify-center text-blue-500">
-                        <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 7h1v10H5V7zm3 0h2v10H8V7zm5 0h1v10h-1V7zm3 0h2v10h-2V7zm3 0h1v10h-1V7z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5v2m0 10v2m18-12v2m0 10v2" /></svg>
+                <div id="manual-trigger-container" class="hidden flex flex-col items-center py-10 gap-6 text-center">
+                    <div class="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center text-blue-500">
+                        <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 7h1v10H5V7zm3 0h2v10H8V7zm5 0h1v10h-1V7zm3 0h2v10h-2V7zm3 0h1v10h-1V7z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5v2m0 10v2m18-12v2m0 10v2" /></svg>
                     </div>
                     <button onclick="startScanner(true)" class="btn-primary w-full max-w-[280px] flex items-center justify-center gap-3">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path></svg>
@@ -210,35 +208,36 @@
                     </button>
                 </div>
 
-                <div id="result-container" class="hidden animate-in zoom-in duration-300">
-                    <div class="p-10 rounded-[2.5rem] bg-gray-900 text-white shadow-2xl relative overflow-hidden text-center">
+                <div id="result-container" class="hidden animate-in zoom-in duration-300 mt-2">
+                    <div class="p-8 rounded-[2rem] bg-gray-900 text-white shadow-2xl relative overflow-hidden text-center">
                         <div class="absolute -right-10 -top-10 w-40 h-40 bg-blue-600/30 rounded-full blur-3xl"></div>
                         <div class="relative z-10">
-                            <p class="text-[10px] font-black uppercase tracking-[0.3em] text-blue-400 mb-4">Precio del Producto</p>
-                            <h2 id="res-price" class="text-7xl font-black tracking-tighter mb-4 tabular-nums">Q0</h2>
-                            <p id="res-code" class="text-xs font-mono opacity-40 mb-8 bg-white/5 inline-block px-4 py-1.5 rounded-full tracking-widest">ID: ---</p>
-                            <button id="btn-new-scan" onclick="resetManualScan()" class="hidden w-full bg-blue-600 py-5 rounded-2xl font-black text-sm uppercase tracking-widest active:scale-95 transition-all shadow-xl">
+                            <p class="text-[10px] font-black uppercase tracking-[0.3em] text-blue-400 mb-3">Precio del Producto</p>
+                            <h2 id="res-price" class="text-6xl font-black tracking-tighter mb-3 tabular-nums">Q0</h2>
+                            <p id="res-code" class="text-xs font-mono opacity-40 mb-4 bg-white/5 inline-block px-4 py-1 rounded-full tracking-widest">ID: ---</p>
+                            <button id="btn-new-scan" onclick="resetManualScan()" class="hidden w-full bg-blue-600 py-4 rounded-2xl font-black text-sm uppercase tracking-widest active:scale-95 transition-all shadow-xl">
                                 Escanear Siguiente
                             </button>
                         </div>
                     </div>
                 </div>
 
-                <div id="not-found" class="mt-4 hidden p-8 rounded-2xl bg-orange-50 border border-orange-100 text-orange-800 text-center text-sm font-bold">
+                <div id="not-found" class="mt-2 hidden p-6 rounded-2xl bg-orange-50 border border-orange-100 text-orange-800 text-center text-sm font-bold">
                     ⚠️ Código no encontrado.
                 </div>
             </div>
 
-            <div class="bg-white p-5 rounded-3xl shadow-sm border border-gray-100">
-                <div class="flex gap-2">
-                    <input type="text" id="manual-code" placeholder="Código manual..." class="flex-1 px-5 py-4 bg-gray-50 border-0 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none text-base font-bold uppercase tracking-widest">
-                    <button id="voice-btn" onclick="toggleVoiceDictation()" class="bg-gray-100 text-gray-500 p-4 rounded-2xl transition-all active:scale-95 shadow-sm border border-gray-200">
+            <!-- Ajuste del buscador manual para evitar desbordes -->
+            <div class="bg-white p-4 rounded-3xl shadow-sm border border-gray-100 flex-none">
+                <div class="flex gap-2 items-center">
+                    <input type="text" id="manual-code" placeholder="Código..." class="flex-1 min-w-0 px-3 py-3 bg-gray-50 border-0 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none text-base font-bold uppercase tracking-widest">
+                    <button id="voice-btn" onclick="toggleVoiceDictation()" class="bg-gray-100 text-gray-500 p-3 rounded-2xl transition-all active:scale-95 shadow-sm border border-gray-200 flex-shrink-0">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"></path>
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 10v2a7 7 0 01-14 0v-2m14 0a2 2 0 002-2V8a2 2 0 00-2-2m-14 0a2 2 0 00-2 2v2a2 2 0 002 2"></path>
                         </svg>
                     </button>
-                    <button onclick="searchManual()" class="bg-gray-900 text-white px-8 py-4 rounded-2xl font-bold active:scale-95 transition-transform uppercase text-xs">OK</button>
+                    <button onclick="searchManual()" class="bg-gray-900 text-white px-5 py-3 rounded-2xl font-bold active:scale-95 transition-transform uppercase text-xs flex-shrink-0">OK</button>
                 </div>
                 <p id="voice-status" class="text-[9px] text-gray-400 mt-2 text-center uppercase font-bold tracking-widest hidden">Escuchando...</p>
             </div>
@@ -274,6 +273,36 @@
         let videoTrack = null;
         let isTorchOn = false;
 
+        // Convertidor de palabras a números ("treinta y dos" -> "32")
+        function textToNumbers(text) {
+            const numMap = {
+                'cero': 0, 'uno': 1, 'dos': 2, 'tres': 3, 'cuatro': 4, 'cinco': 5, 
+                'seis': 6, 'siete': 7, 'ocho': 8, 'nueve': 9, 'diez': 10, 
+                'once': 11, 'doce': 12, 'trece': 13, 'catorce': 14, 'quince': 15, 
+                'dieciseis': 16, 'dieciséis': 16, 'diecisiete': 17, 'dieciocho': 18, 'diecinueve': 19, 
+                'veinte': 20, 'veintiuno': 21, 'veintidos': 22, 'veintidós': 22, 
+                'veintitres': 23, 'veintitrés': 23, 'veinticuatro': 24, 'veinticinco': 25, 
+                'veintiseis': 26, 'veintiséis': 26, 'veintisiete': 27, 'veintiocho': 28, 'veintinueve': 29,
+                'treinta': 30, 'cuarenta': 40, 'cincuenta': 50, 'sesenta': 60, 
+                'setenta': 70, 'ochenta': 80, 'noventa': 90
+            };
+            
+            let parsed = text.toLowerCase();
+            
+            // Pares compuestos (ej. treinta y dos)
+            parsed = parsed.replace(/(treinta|cuarenta|cincuenta|sesenta|setenta|ochenta|noventa)\s+y\s+(uno|dos|tres|cuatro|cinco|seis|siete|ocho|nueve)/g, (match, p1, p2) => {
+                return (numMap[p1] + numMap[p2]).toString();
+            });
+            
+            // Individuales
+            for (const [word, digit] of Object.entries(numMap)) {
+                const regex = new RegExp(`\\b${word}\\b`, 'gi');
+                parsed = parsed.replace(regex, digit);
+            }
+            
+            return parsed;
+        }
+
         const initSpeech = () => {
             window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!window.SpeechRecognition) {
@@ -285,7 +314,11 @@
             recognition.lang = 'es-GT';
 
             recognition.onresult = (event) => {
-                const transcript = Array.from(event.results).map(result => result[0].transcript).join('');
+                let transcript = Array.from(event.results).map(result => result[0].transcript).join('');
+                
+                // Traducir palabras a dígitos
+                transcript = textToNumbers(transcript);
+                
                 document.getElementById('manual-code').value = transcript.toUpperCase();
                 clearTimeout(voiceTimeout);
                 voiceTimeout = setTimeout(() => {
@@ -339,26 +372,55 @@
                 try {
                     const data = new Uint8Array(e.target.result);
                     const workbook = XLSX.read(data, { type: 'array' });
-                    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                    
+                    // Buscar específicamente la hoja "Codigos comercial", ignorando mayúsculas/minúsculas.
+                    // Si no la encuentra, toma la primera hoja (para soportar el formato viejo).
+                    let targetSheetName = workbook.SheetNames.find(name => 
+                        name.toLowerCase().includes('codigos') && name.toLowerCase().includes('comercial')
+                    );
+                    if (!targetSheetName) {
+                        targetSheetName = workbook.SheetNames[0];
+                    }
+
+                    const sheet = workbook.Sheets[targetSheetName];
                     const json = XLSX.utils.sheet_to_json(sheet);
                     const newDb = {};
+                    
                     json.forEach(row => {
                         const keys = Object.keys(row);
-                        const cK = keys.find(k => /cod|id|bar/i.test(k)) || keys[0];
-                        const pK = keys.find(k => /pre|val|cost|monto/i.test(k)) || keys[1];
-                        const code = String(row[cK]).trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
-                        const rP = row[pK];
-                        if (code && rP !== undefined) {
-                            let v = parseFloat(String(rP).replace(/[^\d.,]/g, '').replace(',', '.'));
-                            newDb[code] = isNaN(v) ? "0" : Math.round(v).toString();
+                        
+                        // Buscar la columna "Codigo" (prioriza coincidencias exactas y luego usa la heurística vieja)
+                        const cK = keys.find(k => k.trim().toLowerCase() === 'codigo') 
+                                || keys.find(k => /cod|id|bar/i.test(k)) 
+                                || keys[0];
+                                
+                        // Buscar la columna "Precio" (prioriza coincidencias exactas y luego usa la heurística vieja)
+                        const pK = keys.find(k => k.trim().toLowerCase() === 'precio') 
+                                || keys.find(k => /pre|val|cost|monto/i.test(k)) 
+                                || keys[1];
+
+                        const codeRaw = row[cK];
+                        const priceRaw = row[pK];
+
+                        if (codeRaw !== undefined && priceRaw !== undefined) {
+                            const code = String(codeRaw).trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+                            let v = parseFloat(String(priceRaw).replace(/[^\d.,]/g, '').replace(',', '.'));
+                            
+                            if (code && !isNaN(v)) {
+                                newDb[code] = Math.round(v).toString();
+                            }
                         }
                     });
+                    
                     window.database = newDb;
                     updateUI(Object.keys(newDb).length);
                     if (window.saveToCloud) await window.saveToCloud(newDb);
                     showToast(`${Object.keys(newDb).length} PRODUCTOS GUARDADOS`);
                     switchTab('scan');
-                } catch (err) { showToast("ERROR AL LEER"); }
+                } catch (err) { 
+                    console.error(err);
+                    showToast("ERROR AL LEER EL ARCHIVO"); 
+                }
                 finally { input.value = ""; }
             };
             reader.readAsArrayBuffer(file);
@@ -382,7 +444,6 @@
                                 
                                 if(caps.torch) document.getElementById('torch-button')?.classList.remove('hidden');
                                 
-                                // Aplicar zoom por hardware de manera segura
                                 if(caps.zoom) {
                                     const hwZoom = Math.max(caps.zoom.min, Math.min(caps.zoom.max, 2.0));
                                     setTimeout(() => videoTrack.applyConstraints({ advanced: [{ zoom: hwZoom }] }).catch(() => {}), 500);
@@ -448,17 +509,16 @@
             
             const config = { 
                 fps: 30, 
-                qrbox: (vw, vh) => ({ width: vw * 0.85, height: 200 }), // Caja de lectura ampliada
+                qrbox: (vw, vh) => ({ width: vw * 0.75, height: 120 }), // Ajustado al nuevo tamaño de cámara
                 aspectRatio: 1.0, 
                 videoConstraints: { facingMode: "environment" } 
             };
             
             html5QrCode.start({ facingMode: "environment" }, config, (txt) => {
-                if (html5QrCode.getState() !== 2) return; // Evita lecturas fantasmas si está pausado
+                if (html5QrCode.getState() !== 2) return;
                 findProduct(txt);
                 
                 if (!document.getElementById('camera-continuous')?.checked) {
-                    // PAUSA la cámara en lugar de apagarla para conservar estado y zoom
                     html5QrCode.pause(); 
                     document.getElementById('camera-ui-container')?.classList.add('hidden');
                     document.getElementById('btn-new-scan')?.classList.remove('hidden');
@@ -468,9 +528,26 @@
 
         function findProduct(code) {
             const clean = String(code).trim().toUpperCase().replace(/\s/g, '').replace(/[.]/g, '');
+            let matchedKey = null;
+
+            // 1. Buscar coincidencia exacta primero
             if (window.database[clean]) {
-                document.getElementById('res-code').innerText = `ID: ${clean}`;
-                document.getElementById('res-price').innerText = `Q${window.database[clean]}`;
+                matchedKey = clean;
+            } else {
+                // 2. Buscar si algún código del Excel está dentro del código de barras largo
+                // Ordenamos del más largo al más corto para evitar coincidencias parciales incorrectas
+                const dbKeys = Object.keys(window.database).sort((a, b) => b.length - a.length);
+                for (let i = 0; i < dbKeys.length; i++) {
+                    if (clean.includes(dbKeys[i])) {
+                        matchedKey = dbKeys[i];
+                        break;
+                    }
+                }
+            }
+
+            if (matchedKey) {
+                document.getElementById('res-code').innerText = `ID: ${matchedKey}`;
+                document.getElementById('res-price').innerText = `Q${window.database[matchedKey]}`;
                 document.getElementById('result-container').classList.remove('hidden');
                 document.getElementById('not-found').classList.add('hidden');
             } else {
@@ -525,10 +602,9 @@
             showToast("DATOS ELIMINADOS");
         }
 
-        // Forzar ocultar la pantalla de carga al terminar el DOM
         window.addEventListener('load', () => {
             const loader = document.getElementById('loading-screen');
-            if(loader) loader.style.display = 'none'; // Asegurar completamente que desaparezca
+            if(loader) loader.style.display = 'none';
             
             updateUI(Object.keys(window.database).length);
             patchVideoForIOS();
