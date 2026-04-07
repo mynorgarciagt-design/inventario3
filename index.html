@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -78,7 +79,7 @@
         #reader { 
             border: none !important; 
             width: 100% !important; 
-            height: 260px; /* Reducido para dejar espacio al precio */
+            height: 260px;
             background: #000; 
             border-radius: 2.5rem; 
             overflow: hidden;
@@ -227,7 +228,6 @@
                 </div>
             </div>
 
-            <!-- Ajuste del buscador manual para evitar desbordes -->
             <div class="bg-white p-4 rounded-3xl shadow-sm border border-gray-100 flex-none">
                 <div class="flex gap-2 items-center">
                     <input type="text" id="manual-code" placeholder="Código..." class="flex-1 min-w-0 px-3 py-3 bg-gray-50 border-0 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none text-base font-bold uppercase tracking-widest">
@@ -273,7 +273,6 @@
         let videoTrack = null;
         let isTorchOn = false;
 
-        // Convertidor de palabras a números ("treinta y dos" -> "32")
         function textToNumbers(text) {
             const numMap = {
                 'cero': 0, 'uno': 1, 'dos': 2, 'tres': 3, 'cuatro': 4, 'cinco': 5, 
@@ -286,20 +285,14 @@
                 'treinta': 30, 'cuarenta': 40, 'cincuenta': 50, 'sesenta': 60, 
                 'setenta': 70, 'ochenta': 80, 'noventa': 90
             };
-            
             let parsed = text.toLowerCase();
-            
-            // Pares compuestos (ej. treinta y dos)
             parsed = parsed.replace(/(treinta|cuarenta|cincuenta|sesenta|setenta|ochenta|noventa)\s+y\s+(uno|dos|tres|cuatro|cinco|seis|siete|ocho|nueve)/g, (match, p1, p2) => {
                 return (numMap[p1] + numMap[p2]).toString();
             });
-            
-            // Individuales
             for (const [word, digit] of Object.entries(numMap)) {
                 const regex = new RegExp(`\\b${word}\\b`, 'gi');
                 parsed = parsed.replace(regex, digit);
             }
-            
             return parsed;
         }
 
@@ -315,10 +308,7 @@
 
             recognition.onresult = (event) => {
                 let transcript = Array.from(event.results).map(result => result[0].transcript).join('');
-                
-                // Traducir palabras a dígitos
                 transcript = textToNumbers(transcript);
-                
                 document.getElementById('manual-code').value = transcript.toUpperCase();
                 clearTimeout(voiceTimeout);
                 voiceTimeout = setTimeout(() => {
@@ -373,14 +363,10 @@
                     const data = new Uint8Array(e.target.result);
                     const workbook = XLSX.read(data, { type: 'array' });
                     
-                    // Buscar específicamente la hoja "Codigos comercial", ignorando mayúsculas/minúsculas.
-                    // Si no la encuentra, toma la primera hoja (para soportar el formato viejo).
                     let targetSheetName = workbook.SheetNames.find(name => 
                         name.toLowerCase().includes('codigos') && name.toLowerCase().includes('comercial')
                     );
-                    if (!targetSheetName) {
-                        targetSheetName = workbook.SheetNames[0];
-                    }
+                    if (!targetSheetName) targetSheetName = workbook.SheetNames[0];
 
                     const sheet = workbook.Sheets[targetSheetName];
                     const json = XLSX.utils.sheet_to_json(sheet);
@@ -388,16 +374,8 @@
                     
                     json.forEach(row => {
                         const keys = Object.keys(row);
-                        
-                        // Buscar la columna "Codigo" (prioriza coincidencias exactas y luego usa la heurística vieja)
-                        const cK = keys.find(k => k.trim().toLowerCase() === 'codigo') 
-                                || keys.find(k => /cod|id|bar/i.test(k)) 
-                                || keys[0];
-                                
-                        // Buscar la columna "Precio" (prioriza coincidencias exactas y luego usa la heurística vieja)
-                        const pK = keys.find(k => k.trim().toLowerCase() === 'precio') 
-                                || keys.find(k => /pre|val|cost|monto/i.test(k)) 
-                                || keys[1];
+                        const cK = keys.find(k => k.trim().toLowerCase() === 'codigo') || keys.find(k => /cod|id|bar/i.test(k)) || keys[0];
+                        const pK = keys.find(k => k.trim().toLowerCase() === 'precio') || keys.find(k => /pre|val|cost|monto/i.test(k)) || keys[1];
 
                         const codeRaw = row[cK];
                         const priceRaw = row[pK];
@@ -418,7 +396,6 @@
                     showToast(`${Object.keys(newDb).length} PRODUCTOS GUARDADOS`);
                     switchTab('scan');
                 } catch (err) { 
-                    console.error(err);
                     showToast("ERROR AL LEER EL ARCHIVO"); 
                 }
                 finally { input.value = ""; }
@@ -443,7 +420,6 @@
                                 const caps = videoTrack.getCapabilities ? videoTrack.getCapabilities() : {};
                                 
                                 if(caps.torch) document.getElementById('torch-button')?.classList.remove('hidden');
-                                
                                 if(caps.zoom) {
                                     const hwZoom = Math.max(caps.zoom.min, Math.min(caps.zoom.max, 2.0));
                                     setTimeout(() => videoTrack.applyConstraints({ advanced: [{ zoom: hwZoom }] }).catch(() => {}), 500);
@@ -472,12 +448,7 @@
             if (isCont) {
                 document.getElementById('manual-trigger-container')?.classList.add('hidden');
                 document.getElementById('camera-ui-container')?.classList.remove('hidden');
-                
-                if (html5QrCode && html5QrCode.getState() === 3) {
-                    html5QrCode.resume();
-                } else {
-                    startScanner(false);
-                }
+                startScanner(false);
             } else {
                 stopScanner();
                 document.getElementById('camera-ui-container')?.classList.add('hidden');
@@ -509,19 +480,20 @@
             
             const config = { 
                 fps: 30, 
-                qrbox: (vw, vh) => ({ width: vw * 0.75, height: 120 }), // Ajustado al nuevo tamaño de cámara
+                qrbox: (vw, vh) => ({ width: vw * 0.75, height: 120 }),
                 aspectRatio: 1.0, 
                 videoConstraints: { facingMode: "environment" } 
             };
             
             html5QrCode.start({ facingMode: "environment" }, config, (txt) => {
-                if (html5QrCode.getState() !== 2) return;
                 findProduct(txt);
                 
                 if (!document.getElementById('camera-continuous')?.checked) {
-                    html5QrCode.pause(); 
-                    document.getElementById('camera-ui-container')?.classList.add('hidden');
-                    document.getElementById('btn-new-scan')?.classList.remove('hidden');
+                    setTimeout(() => {
+                        stopScanner(); 
+                        document.getElementById('camera-ui-container')?.classList.add('hidden');
+                        document.getElementById('btn-new-scan')?.classList.remove('hidden');
+                    }, 0);
                 }
             }).catch(() => {});
         }
@@ -530,12 +502,9 @@
             const clean = String(code).trim().toUpperCase().replace(/\s/g, '').replace(/[.]/g, '');
             let matchedKey = null;
 
-            // 1. Buscar coincidencia exacta primero
             if (window.database[clean]) {
                 matchedKey = clean;
             } else {
-                // 2. Buscar si algún código del Excel está dentro del código de barras largo
-                // Ordenamos del más largo al más corto para evitar coincidencias parciales incorrectas
                 const dbKeys = Object.keys(window.database).sort((a, b) => b.length - a.length);
                 for (let i = 0; i < dbKeys.length; i++) {
                     if (clean.includes(dbKeys[i])) {
@@ -555,8 +524,10 @@
                 document.getElementById('not-found').classList.remove('hidden');
                 if (!document.getElementById('camera-continuous')?.checked) {
                     document.getElementById('btn-new-scan')?.classList.remove('hidden');
-                    if(html5QrCode && html5QrCode.getState() === 2) html5QrCode.pause();
-                    document.getElementById('camera-ui-container')?.classList.add('hidden');
+                    setTimeout(() => {
+                        stopScanner();
+                        document.getElementById('camera-ui-container')?.classList.add('hidden');
+                    }, 0);
                 }
             }
         }
@@ -566,12 +537,7 @@
             document.getElementById('result-container').classList.add('hidden');
             document.getElementById('not-found').classList.add('hidden');
             document.getElementById('camera-ui-container').classList.remove('hidden');
-            
-            if (html5QrCode && html5QrCode.getState() === 3) {
-                html5QrCode.resume();
-            } else {
-                startScanner(true);
-            }
+            startScanner(true);
         }
 
         function searchManual() {
@@ -602,6 +568,22 @@
             showToast("DATOS ELIMINADOS");
         }
 
+        // Listener para revivir la cámara en iOS si el usuario cambia de app o apaga la pantalla
+        document.addEventListener("visibilitychange", () => {
+            if (document.hidden) {
+                stopScanner();
+            } else {
+                const isScanTab = !document.getElementById('section-scan').classList.contains('hidden');
+                const isContinuous = document.getElementById('camera-continuous')?.checked;
+                const hasResult = !document.getElementById('result-container').classList.contains('hidden');
+                const hasNotFound = !document.getElementById('not-found').classList.contains('hidden');
+                
+                if (isScanTab && isContinuous && !hasResult && !hasNotFound) {
+                    setTimeout(() => startScanner(false), 300);
+                }
+            }
+        });
+
         window.addEventListener('load', () => {
             const loader = document.getElementById('loading-screen');
             if(loader) loader.style.display = 'none';
@@ -614,3 +596,6 @@
     </script>
 </body>
 </html>
+
+
+```
