@@ -8,22 +8,6 @@
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
-    <!-- Parche agresivo para iOS (Evita pantalla completa) -->
-    <script>
-        const originalCreateElement = document.createElement.bind(document);
-        document.createElement = function(tagName) {
-            const el = originalCreateElement(tagName);
-            if (tagName.toLowerCase() === 'video') {
-                el.setAttribute('playsinline', '');
-                el.setAttribute('webkit-playsinline', '');
-                el.playsInline = true;
-                el.muted = true;
-                el.defaultMuted = true;
-            }
-            return el;
-        };
-    </script>
-
     <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
@@ -94,7 +78,7 @@
         #reader { 
             border: none !important; 
             width: 100% !important; 
-            height: 260px;
+            height: 280px;
             background: #000; 
             border-radius: 2.5rem; 
             overflow: hidden;
@@ -131,8 +115,8 @@
             pointer-events: none;
         }
         @keyframes moveLine {
-            0%, 100% { transform: translateY(-50px); opacity: 0.5; }
-            50% { transform: translateY(50px); opacity: 1; }
+            0%, 100% { transform: translateY(-70px); opacity: 0.5; }
+            50% { transform: translateY(70px); opacity: 1; }
         }
 
         .focus-box {
@@ -140,12 +124,35 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 85%;
-            height: 140px; 
+            width: 95%; /* Súper ancho para que quepa todo el código largo */
+            height: 160px;
             border: 2px solid rgba(255, 255, 255, 0.2);
             border-radius: 1.5rem;
             z-index: 5;
             pointer-events: none;
+        }
+
+        /* Estilo para el slider de zoom */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 24px;
+            width: 24px;
+            border-radius: 50%;
+            background: #ffffff;
+            margin-top: -10px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.4);
+            border-radius: 2px;
         }
 
         @keyframes pulse-red {
@@ -209,9 +216,17 @@
                         <div class="focus-box"></div>
                         <div class="scan-line" id="scan-line"></div>
                     </div>
-                    <button id="torch-button" onclick="toggleTorch()" class="hidden absolute top-8 right-8 z-20 bg-white/10 backdrop-blur-xl p-3 rounded-full text-white active:scale-90 transition-transform border border-white/20">
+                    
+                    <button id="torch-button" onclick="toggleTorch()" class="hidden absolute top-8 right-8 z-20 bg-black/30 backdrop-blur-md p-3 rounded-full text-white active:scale-90 transition-transform">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
                     </button>
+
+                    <!-- Control de Zoom Manual -->
+                    <div id="zoom-container" class="hidden absolute bottom-6 left-1/2 -translate-x-1/2 w-[80%] z-20 bg-black/40 backdrop-blur-md px-4 py-2 rounded-2xl flex items-center gap-3">
+                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        <input type="range" id="zoom-slider" min="1" max="5" step="0.1" value="1.5" class="w-full">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"></path></svg>
+                    </div>
                 </div>
 
                 <div id="manual-trigger-container" class="hidden flex flex-col items-center py-10 gap-6 text-center">
@@ -225,7 +240,7 @@
                 </div>
 
                 <div id="result-container" class="hidden animate-in zoom-in duration-300 mt-2">
-                    <div class="p-8 rounded-[2rem] bg-gray-900 text-white shadow-2xl relative overflow-hidden text-center">
+                    <div id="result-card" class="p-8 rounded-[2rem] bg-gray-900 text-white shadow-2xl relative overflow-hidden text-center transition-colors duration-300">
                         <div class="absolute -right-10 -top-10 w-40 h-40 bg-blue-600/30 rounded-full blur-3xl"></div>
                         <div class="relative z-10">
                             <p class="text-[10px] font-black uppercase tracking-[0.3em] text-blue-400 mb-3">Precio del Producto</p>
@@ -287,6 +302,7 @@
         let voiceTimeout;
         let videoTrack = null;
         let isTorchOn = false;
+        let isMagenta = false;
 
         function textToNumbers(text) {
             const numMap = {
@@ -329,7 +345,7 @@
                 voiceTimeout = setTimeout(() => {
                     recognition.stop();
                     searchManual();
-                }, 1000);
+                }, 1200); // 1.2 segundos para mejor exactitud sin ser muy lento
             };
 
             recognition.onstart = () => {
@@ -430,12 +446,31 @@
                                 const caps = videoTrack.getCapabilities ? videoTrack.getCapabilities() : {};
                                 
                                 if(caps.torch) document.getElementById('torch-button')?.classList.remove('hidden');
-                                if(caps.focusMode) {
-                                    videoTrack.applyConstraints({ advanced: [{ focusMode: "continuous" }] }).catch(() => {});
-                                }
+                                
+                                // Habilitar slider de zoom si el dispositivo lo soporta
                                 if(caps.zoom) {
-                                    const hwZoom = Math.max(caps.zoom.min, Math.min(caps.zoom.max, 2.0));
-                                    setTimeout(() => videoTrack.applyConstraints({ advanced: [{ zoom: hwZoom }] }).catch(() => {}), 500);
+                                    const zoomContainer = document.getElementById('zoom-container');
+                                    const zoomSlider = document.getElementById('zoom-slider');
+                                    
+                                    zoomContainer.classList.remove('hidden');
+                                    
+                                    // Configurar límites de zoom
+                                    zoomSlider.min = caps.zoom.min;
+                                    zoomSlider.max = Math.min(caps.zoom.max, 5.0); // Máximo 5x para no perder calidad
+                                    zoomSlider.step = 0.1;
+                                    
+                                    // Establecer zoom inicial a 1.5x
+                                    const startZoom = Math.max(caps.zoom.min, Math.min(1.5, zoomSlider.max));
+                                    zoomSlider.value = startZoom;
+                                    
+                                    setTimeout(() => videoTrack.applyConstraints({ advanced: [{ zoom: startZoom }] }).catch(() => {}), 500);
+
+                                    // Evento cuando se mueve la barra
+                                    zoomSlider.addEventListener('input', (e) => {
+                                        if (videoTrack) {
+                                            videoTrack.applyConstraints({ advanced: [{ zoom: parseFloat(e.target.value) }] }).catch(() => {});
+                                        }
+                                    });
                                 }
                             }
                         }
@@ -472,6 +507,7 @@
         async function stopScanner() {
             isTorchOn = false;
             document.getElementById('torch-button')?.classList.add('hidden');
+            document.getElementById('zoom-container')?.classList.add('hidden'); // Ocultar slider al parar
             if (html5QrCode && (html5QrCode.getState() === 2 || html5QrCode.getState() === 3)) {
                 await html5QrCode.stop().catch(() => {});
                 html5QrCode = null;
@@ -502,7 +538,7 @@
             
             const config = { 
                 fps: 15, 
-                qrbox: (vw, vh) => ({ width: vw * 0.85, height: 150 }), 
+                qrbox: (vw, vh) => ({ width: vw * 0.95, height: vh * 0.6 }), // Abarca casi toda la pantalla
                 videoConstraints: { 
                     facingMode: "environment",
                     width: { ideal: 1920 },
@@ -543,6 +579,17 @@
             if (matchedKey) {
                 document.getElementById('res-code').innerText = `ID: ${matchedKey}`;
                 document.getElementById('res-price').innerText = `Q${window.database[matchedKey]}`;
+                
+                const resCard = document.getElementById('result-card');
+                if (isMagenta) {
+                    resCard.classList.remove('bg-gray-900');
+                    resCard.classList.add('bg-fuchsia-700');
+                } else {
+                    resCard.classList.remove('bg-fuchsia-700');
+                    resCard.classList.add('bg-gray-900');
+                }
+                isMagenta = !isMagenta;
+
                 document.getElementById('result-container').classList.remove('hidden');
                 document.getElementById('not-found').classList.add('hidden');
             } else {
@@ -567,8 +614,15 @@
         }
 
         function searchManual() {
-            const inp = document.getElementById('manual-code');
-            if (inp && inp.value.trim()) findProduct(inp.value.trim());
+            let inp = document.getElementById('manual-code').value.trim().toUpperCase();
+            
+            // Si solo son números, agregamos "MM" al inicio automáticamente
+            if (/^\d+$/.test(inp)) {
+                inp = "MM" + inp;
+                document.getElementById('manual-code').value = inp;
+            }
+            
+            if (inp) findProduct(inp);
         }
 
         function updateUI(count) {
