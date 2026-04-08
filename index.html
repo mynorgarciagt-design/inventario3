@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Multimodas - Inventario Pro</title>
+    <title>Mynor Garcia - Inventario Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -178,8 +178,8 @@
 
     <header class="bg-white border-b sticky top-0 z-50 px-6 py-4 flex justify-between items-center shadow-sm flex-none">
         <div>
-            <h1 class="text-xl font-black text-gray-900 tracking-tight">Multi<span class="text-blue-600">modas</span></h1>
-            <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest text-left">by Mynor Garcia</p>
+            <h1 class="text-xl font-black text-gray-900 tracking-tight">Mynor <span class="text-blue-600">Garcia</span></h1>
+            <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest text-left">by Multimodas</p>
         </div>
         <div id="db-status" class="text-[10px] uppercase font-bold px-3 py-1.5 rounded-full bg-red-100 text-red-600 border border-red-200">
             Sin Datos
@@ -276,12 +276,13 @@
         <section id="section-data" class="hidden space-y-4">
             <div class="bg-white p-6 rounded-[2.5rem] shadow-sm border border-gray-100 text-center">
                 <h3 class="text-xl font-black text-gray-900 mb-4 text-center">Cargar Datos</h3>
-                <input type="file" id="excel-file" class="hidden" accept=".xlsx, .xls, .csv" onchange="handleExcel(this)" />
+                <!-- Se agregó 'multiple' para permitir varios archivos -->
+                <input type="file" id="excel-file" class="hidden" accept=".xlsx, .xls, .csv" multiple onchange="handleExcel(this)" />
                 <button onclick="document.getElementById('excel-file').click()" class="flex flex-col items-center justify-center w-full h-52 border-2 border-dashed border-gray-200 rounded-[2.5rem] bg-gray-50 hover:bg-blue-50 transition-all">
                     <div class="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center mb-4 text-green-600">
                         <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2a4 4 0 014-4h4m-4 4l-4-4m4 4l4-4m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
                     </div>
-                    <p class="text-sm font-black text-gray-700">Subir Archivo de Excel</p>
+                    <p class="text-sm font-black text-gray-700">Subir Archivo(s) de Excel</p>
                 </button>
                 <button onclick="clearData()" class="mt-8 text-[10px] font-black text-red-400 uppercase tracking-widest">Eliminar Inventario Actual</button>
             </div>
@@ -386,54 +387,69 @@
         }
 
         async function handleExcel(input) {
-            const file = input.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = async (e) => {
-                try {
-                    const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
-                    
-                    let targetSheetName = workbook.SheetNames.find(name => 
-                        name.toLowerCase().includes('codigos') && name.toLowerCase().includes('comercial')
-                    );
-                    if (!targetSheetName) targetSheetName = workbook.SheetNames[0];
-
-                    const sheet = workbook.Sheets[targetSheetName];
-                    const json = XLSX.utils.sheet_to_json(sheet);
-                    const newDb = {};
-                    
-                    json.forEach(row => {
-                        const keys = Object.keys(row);
-                        // Se agregó 'cestilo' a la búsqueda de código
-                        const cK = keys.find(k => k.trim().toLowerCase() === 'codigo') || keys.find(k => /cod|id|bar|cestilo/i.test(k)) || keys[0];
-                        // Se agregó 'pv' a la búsqueda de precio
-                        const pK = keys.find(k => k.trim().toLowerCase() === 'precio') || keys.find(k => /pre|val|cost|monto|pv/i.test(k)) || keys[1];
-
-                        const codeRaw = row[cK];
-                        const priceRaw = row[pK];
-
-                        if (codeRaw !== undefined && priceRaw !== undefined) {
-                            const code = String(codeRaw).trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
-                            let v = parseFloat(String(priceRaw).replace(/[^\d.,]/g, '').replace(',', '.'));
+            if (!input.files || input.files.length === 0) return;
+            
+            // Mantenemos los datos anteriores para combinar ambos Excels
+            const newDb = { ...window.database };
+            
+            const processFile = (file) => {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        try {
+                            const data = new Uint8Array(e.target.result);
+                            const workbook = XLSX.read(data, { type: 'array' });
                             
-                            if (code && !isNaN(v)) {
-                                newDb[code] = Math.round(v).toString();
-                            }
+                            let targetSheetName = workbook.SheetNames.find(name => 
+                                name.toLowerCase().includes('codigos') && name.toLowerCase().includes('comercial')
+                            );
+                            if (!targetSheetName) targetSheetName = workbook.SheetNames[0];
+
+                            const sheet = workbook.Sheets[targetSheetName];
+                            const json = XLSX.utils.sheet_to_json(sheet);
+                            
+                            json.forEach(row => {
+                                const keys = Object.keys(row);
+                                const cK = keys.find(k => k.trim().toLowerCase() === 'codigo') || keys.find(k => /cod|id|bar|cestilo/i.test(k)) || keys[0];
+                                const pK = keys.find(k => k.trim().toLowerCase() === 'precio') || keys.find(k => /pre|val|cost|monto|pv/i.test(k)) || keys[1];
+
+                                const codeRaw = row[cK];
+                                const priceRaw = row[pK];
+
+                                if (codeRaw !== undefined && priceRaw !== undefined) {
+                                    const code = String(codeRaw).trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+                                    let v = parseFloat(String(priceRaw).replace(/[^\d.,]/g, '').replace(',', '.'));
+                                    
+                                    if (code && !isNaN(v)) {
+                                        newDb[code] = Math.round(v).toString();
+                                    }
+                                }
+                            });
+                            resolve();
+                        } catch (err) { 
+                            reject(err); 
                         }
-                    });
-                    
-                    window.database = newDb;
-                    updateUI(Object.keys(newDb).length);
-                    if (window.saveToCloud) await window.saveToCloud(newDb);
-                    showToast(`${Object.keys(newDb).length} PRODUCTOS GUARDADOS`);
-                    switchTab('scan');
-                } catch (err) { 
-                    showToast("ERROR AL LEER EL ARCHIVO"); 
-                }
-                finally { input.value = ""; }
+                    };
+                    reader.onerror = reject;
+                    reader.readAsArrayBuffer(file);
+                });
             };
-            reader.readAsArrayBuffer(file);
+
+            try {
+                // Procesamos todos los archivos seleccionados al mismo tiempo
+                const promises = Array.from(input.files).map(processFile);
+                await Promise.all(promises);
+                
+                window.database = newDb;
+                updateUI(Object.keys(newDb).length);
+                if (window.saveToCloud) await window.saveToCloud(newDb);
+                showToast(`${Object.keys(newDb).length} PRODUCTOS EN TOTAL`);
+                switchTab('scan');
+            } catch (err) { 
+                showToast("ERROR AL LEER ARCHIVOS"); 
+            } finally {
+                input.value = "";
+            }
         }
 
         const patchVideoForIOS = () => {
